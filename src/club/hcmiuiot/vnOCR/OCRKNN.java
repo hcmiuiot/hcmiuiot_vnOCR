@@ -33,7 +33,7 @@ public class OCRKNN {
 		Mat imgTrain = new Mat(0,0, CvType.CV_32F);
 		
 		for (int digit=0; digit<10; digit++) {
-			for (int element=digit*500; element < (digit+1)*500 - 100; element++) {
+			for (int element=digit*500; element < (digit+1)*500; element++) {
 				img = Imgcodecs.imread("data/"+digit + "/" + element + ".jpg", 0);
 				img.convertTo(img, CvType.CV_32F);
 				img = img.clone().reshape(1,1);
@@ -48,13 +48,13 @@ public class OCRKNN {
 		System.out.println(knn.isTrained());	
 	}
 	
-	private static int predict(String fileName) {	
+	public static int predict(String fileName) {	
 		Mat a = Imgcodecs.imread(fileName,0);
 		Imgproc.resize(a, a, new Size(20,20));
 		a.convertTo(a, CvType.CV_32F);
 		a = a.clone().reshape(1,1);
 		Mat res = new Mat();
-		knn.findNearest(a, 10, res);
+		knn.findNearest(a, 9, res);
 		//System.out.println("Predicted " + res.dump());
 		return (int) res.get(0, 0)[0];
 	}

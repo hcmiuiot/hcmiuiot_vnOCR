@@ -41,7 +41,8 @@ public class OCREngine {
 //		Mat m = Imgcodecs.imread("data/0/0.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
 //		System.out.println(m.dump());
 		OCRKNN.train();
-		System.out.println("test.jpg");
+		String fileName = "test.jpg";
+		System.out.println("Predict for "+fileName+" = " + OCRKNN.predict(fileName));
 	}
 	
 }
