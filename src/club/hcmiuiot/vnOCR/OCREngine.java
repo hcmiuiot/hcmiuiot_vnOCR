@@ -1,13 +1,15 @@
 package club.hcmiuiot.vnOCR;
 
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfFloat;
-import org.opencv.core.Size;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.ml.SVM;
-import org.opencv.objdetect.HOGDescriptor;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 import club.hcmiuiot.opencv.ImgShow;
 
 public class OCREngine {	
@@ -16,33 +18,38 @@ public class OCREngine {
 		
 		System.loadLibrary("opencv_hcmiuiot");
 		
-//		Mat img = Imgcodecs.imread("data/digits.png");
-//		ImgShow.imshow("src", img);
-//			
-//		HOGDescriptor hog = new HOGDescriptor(new Size(20,20),
-//												new Size(10,10), 
-//												new Size(5,5), 
-//												new Size(10,10), 
-//												9);
-//		
-//		
-//		
-//		MatOfFloat descriptors = new MatOfFloat();
-//		hog.compute(img, descriptors);
-//		
-		//System.out.println(descriptors.dump());
-		
 	}
 	
 	
 	public static void main(String[] args) {
 		new OCREngine();
-		//OCRSVM.splitAndSave("data/digits.png");
-//		Mat m = Imgcodecs.imread("data/0/0.jpg", Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE);
-//		System.out.println(m.dump());
 		OCRKNN.train();
-		String fileName = "test.jpg";
-		System.out.println("Predict for "+fileName+" = " + OCRKNN.predict(fileName));
+		String fileName = "data/testData/test16.jpg";
+		
+		Mat img = Imgcodecs.imread(fileName, 0);
+		Mat src = Imgcodecs.imread(fileName);
+		
+		Imgproc.threshold(img, img, 100, 255, Imgproc.THRESH_BINARY);
+		
+		ImgShow.imshow("src", img);
+		
+		List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+		Mat hierarchy = new Mat();
+		Mat roi = new Mat();
+		
+		Imgproc.findContours(img, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+		
+		for (int i=0; i<contours.size(); i++) {
+			Rect rec = Imgproc.boundingRect(contours.get(i));
+			roi = img.submat(rec);
+			
+			int predictValue = OCRKNN.predict(roi);
+			
+			Imgproc.rectangle(src, rec.tl(), rec.br(), new Scalar(255,0,0),2);
+			Imgproc.putText(src, ""+predictValue, new Point(rec.tl().x, rec.tl().y), 1, 2f, new Scalar(0,255,0));
+		}
+		
+		ImgShow.imshow("src", src);
 	}
 	
 }

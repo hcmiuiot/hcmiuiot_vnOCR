@@ -1,15 +1,24 @@
 package club.hcmiuiot.vnOCR;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
+
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfInt;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.KNearest;
 import org.opencv.ml.Ml;
 import org.opencv.ml.StatModel;
+
+import club.hcmiuiot.opencv.ImgShow;
 
 public class OCRKNN {
 
@@ -32,11 +41,23 @@ public class OCRKNN {
 
 		Mat imgTrain = new Mat(0,0, CvType.CV_32F);
 		
+//		for (int digit=0; digit<10; digit++) {
+//			for (int element=digit*500; element < (digit+1)*500; element++) {
+//				img = Imgcodecs.imread("data/"+digit + "/" + element + ".jpg", 0);
+//				img.convertTo(img, CvType.CV_32F);
+//				img = img.clone().reshape(1,1);
+//				label.push_back(new MatOfInt(digit));
+//				imgTrain.push_back(img);
+//			}			
+//		}
+		
 		for (int digit=0; digit<10; digit++) {
-			for (int element=digit*500; element < (digit+1)*500; element++) {
-				img = Imgcodecs.imread("data/"+digit + "/" + element + ".jpg", 0);
+			for (int element=1; element <= 35; element++) {
+				img = Imgcodecs.imread("data/digits2/"+digit+"/a (" +  element + ").jpg", 0);
+				System.out.println("data/digits2/"+digit+"/a (" +  element + ").jpg");
 				img.convertTo(img, CvType.CV_32F);
 				img = img.clone().reshape(1,1);
+				//System.out.println(img.dump());
 				label.push_back(new MatOfInt(digit));
 				imgTrain.push_back(img);
 			}			
@@ -50,11 +71,24 @@ public class OCRKNN {
 	
 	public static int predict(String fileName) {	
 		Mat a = Imgcodecs.imread(fileName,0);
-		Imgproc.resize(a, a, new Size(20,20));
+		Imgproc.threshold(a, a, 200, 255, Imgproc.THRESH_BINARY);
+		Imgproc.resize(a, a, new Size(20,30));
 		a.convertTo(a, CvType.CV_32F);
 		a = a.clone().reshape(1,1);
 		Mat res = new Mat();
 		knn.findNearest(a, 9, res);
+		//System.out.println("Predicted " + res.dump());
+		return (int) res.get(0, 0)[0];
+	}
+	
+	public static int predict(Mat m) {	
+		//Mat a = Imgcodecs.imread(fileName,0);
+		//Imgproc.threshold(a, a, 200, 255, Imgproc.THRESH_BINARY);
+		Imgproc.resize(m, m, new Size(20,30));
+		m.convertTo(m, CvType.CV_32F);
+		m = m.clone().reshape(1,1);
+		Mat res = new Mat();
+		knn.findNearest(m, 9, res);
 		//System.out.println("Predicted " + res.dump());
 		return (int) res.get(0, 0)[0];
 	}
@@ -84,8 +118,50 @@ public class OCRKNN {
 		}	
 	}
 	
-	private Mat getSVM() {
-		return null;
+	public static void test() {
+		Mat img = Imgcodecs.imread("data/digits2.png");
+		Mat gray = new Mat();
+		Mat roi = new Mat();
+		Mat saved = new Mat();
+		Imgproc.cvtColor(img, gray, Imgproc.COLOR_BGR2GRAY);
+		//System.out.println(gray);
+		
+		Imgproc.threshold(gray, gray, 50, 255, Imgproc.THRESH_BINARY);
+		
+		Scanner sc = new Scanner(System.in);
+		
+		List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+		Mat hierarchy = new Mat();
+		
+		Imgproc.findContours(gray, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+		for (int i=0; i<contours.size(); i++) {
+			Rect rec = Imgproc.boundingRect(contours.get(i));
+			//Imgproc.rectangle(img, rec.tl(), rec.br(), new Scalar(255,0,0), 2);
+			ImgShow.imshow("a", img.submat(rec));
+			roi = gray.submat(rec);
+			//Imgcodecs.imwrite("data/digits2/"+i+".jpg", gray.submat(rec));
+			
+			float ratio = roi.height()/30.0f;
+			
+//			if (ratio > 1f) {
+//				Imgproc.pyrDown(roi, saved, new Size(roi.width()/ratio, roi.height()/ratio));
+				Imgproc.resize(roi, saved, new Size(20, 30));
+//			}
+//			else
+//				if (ratio < 1f) {
+//					Imgproc.pyrUp(roi, saved, new Size(roi.width()/ratio, roi.height()/ratio));
+//				}
+			
+			Imgcodecs.imwrite("data/digits2/"+i+".jpg", saved);
+			
+			//Imgproc.drawContours(img, contours, i, new Scalar(255,0,0));
+		}
+		
+		Rect rec = Imgproc.boundingRect(contours.get(2));
+		
+		System.out.println(img);
+		
+		ImgShow.imshow("digits2", img);
 	}
 	
 	public int ocr(Mat img) {
